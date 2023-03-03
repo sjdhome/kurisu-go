@@ -1,13 +1,15 @@
-.PHONY: release
-debug: build/debug/kurisu
-release: build/release/kurisu
+.PHONY: release debug clean npm-task
+.DEFAULT_GOAL := debug
+
 clean:
-	rm -r build || true
+	rm -r build/* || true
 	rm -r web/static/js/* || true
 
-build/debug/kurisu: clean
+npm-task:
 	npm run compile
-	go build -o $@ main.go
-build/release/kurisu: clean
-	npm run compile
-	go build -ldflags "-s" -o $@ main.go
+
+debug: clean npm-task
+	go build -o build/kurisu main.go
+
+release: clean npm-task
+	go build -o build/kurisu -ldflags "-s" main.go
