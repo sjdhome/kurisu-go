@@ -4,12 +4,17 @@ import (
 	"embed"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
 func New(msgBus chan string) {
-	log.Println("Starting web server at \":8080\".")
-	http.ListenAndServe(":8080", http.HandlerFunc(serve))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting web server at \":%s\".\n", port)
+	log.Fatalln(http.ListenAndServe(":"+port, http.HandlerFunc(serve)))
 }
 
 //go:embed static
