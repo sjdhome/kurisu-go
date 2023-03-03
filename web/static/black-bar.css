@@ -1,0 +1,18 @@
+.black-bar {
+  height: 48px;
+  overflow: auto;
+  background-color: #282828;
+  color: white;
+}
+
+.black-bar a,
+.margin-left-right {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.black-bar a,
+.better-link {
+  text-decoration: none;
+  color: white;
+}
