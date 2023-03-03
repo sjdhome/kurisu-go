@@ -27,6 +27,7 @@ var indexHTML []byte
 
 func serve(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
+	w.Header().Set("Server", "kurisu")
 	switch {
 	case p == "/" || p == "/index.html":
 		w.WriteHeader(http.StatusOK)
