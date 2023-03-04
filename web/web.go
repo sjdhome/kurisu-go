@@ -33,6 +33,8 @@ var staticServer = http.FileServer(http.FS(staticFS))
 var indexHTML []byte
 
 func serve(w http.ResponseWriter, r *http.Request) {
+	log.Printf("web: %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
+
 	p := r.URL.Path
 	w.Header().Set("Server", "kurisu")
 	switch {
