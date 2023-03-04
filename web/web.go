@@ -35,26 +35,53 @@ var indexHTML []byte
 //go:embed favicon.ico
 var favicon []byte
 
+const DOMAIN = "sjdhome.com"
+
 func serve(w http.ResponseWriter, r *http.Request) {
 	if ip, exist := r.Header[http.CanonicalHeaderKey("CF-Connecting-IP")]; exist {
 		r.RemoteAddr = ip[0]
 	}
-	log.Printf("web: %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
+	log.Printf("%s: %s %s %s\n", r.Host, r.RemoteAddr, r.Method, r.URL.Path)
 
+	if r.Method == http.MethodGet {
+		get(w, r)
+	} else if r.Method == http.MethodPost {
+		post(w, r)
+	} else {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
+}
+
+func get(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
-	w.Header().Set("Server", "kurisu")
+	h := w.Header()
+
+	h.Set("Server", "kurisu")
+
+	// Redirect www to naked domain.
+	if r.Host == "www."+DOMAIN {
+		http.Redirect(w, r, "https://"+DOMAIN+r.URL.Path, http.StatusMovedPermanently)
+		return
+	}
+
+	// Router.
 	switch {
 	case p == "/" || p == "/index.html":
 		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		h.Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(indexHTML)
 	case strings.HasPrefix(p, "/static/"):
+		h.Set("Access-Control-Allow-Origin", "https://"+DOMAIN)
 		staticServer.ServeHTTP(w, r)
 	case p == "/favicon.ico":
 		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "image/x-icon")
+		h.Set("Content-Type", "image/x-icon")
 		w.Write(favicon)
 	default:
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 	}
+}
+
+func post(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusMethodNotAllowed)
 }
