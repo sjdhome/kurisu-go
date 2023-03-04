@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"kurisu/terminal"
 	"kurisu/web"
 	"log"
@@ -12,6 +13,17 @@ import (
 func main() {
 	flag.Parse()
 
+	// Send log to stdout and file.
+	logFile, err := os.OpenFile("kurisu.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println("Failed to open log file.")
+		log.Fatalln(err)
+	}
+	defer logFile.Close()
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
+
+	log.SetPrefix("[kurisu] ")
 	log.Println("Starting kurisu...")
 
 	webMsg := make(chan string)
@@ -20,7 +32,6 @@ func main() {
 	terminalMsg := make(chan string)
 	go terminal.New(terminalMsg)
 
-	log.Println("Now you can type command. Type \"help\" to get help.")
 	select {
 	case msg := <-webMsg:
 		fmt.Println(msg)

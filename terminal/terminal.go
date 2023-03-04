@@ -7,6 +7,7 @@ import (
 
 func New(msgBus chan string) {
 	var input string
+	log.Println("Now you can type command. Type \"help\" to get help.")
 	for {
 		fmt.Scan(&input)
 		switch input {
