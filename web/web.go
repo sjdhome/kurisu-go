@@ -3,6 +3,7 @@ package web
 import (
 	"embed"
 	"flag"
+	"io/fs"
 	"log"
 	"net/http"
 	"strings"
@@ -24,13 +25,11 @@ func New(msgBus chan string) {
 	}
 }
 
-//go:embed static
-var staticFS embed.FS
+//go:embed www
+var _wwwFS embed.FS
 
-var staticServer = http.FileServer(http.FS(staticFS))
-
-//go:embed page/index.html
-var indexHTML []byte
+var wwwFS, _ = fs.Sub(_wwwFS, "www")
+var wwwServer = http.FileServer(http.FS(wwwFS))
 
 //go:embed favicon.ico
 var favicon []byte
@@ -60,25 +59,38 @@ func get(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect www to naked domain.
 	if r.Host == "www."+DOMAIN {
-		http.Redirect(w, r, "https://"+DOMAIN+r.URL.Path, http.StatusMovedPermanently)
+		http.Redirect(w, r, r.Proto+"://"+DOMAIN+r.URL.Path, http.StatusMovedPermanently)
 		return
 	}
 
 	// Router.
 	switch {
-	case p == "/" || p == "/index.html":
-		w.WriteHeader(http.StatusOK)
-		h.Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(indexHTML)
-	case strings.HasPrefix(p, "/static/"):
-		h.Set("Access-Control-Allow-Origin", "https://"+DOMAIN)
-		staticServer.ServeHTTP(w, r)
 	case p == "/favicon.ico":
 		w.WriteHeader(http.StatusOK)
 		h.Set("Content-Type", "image/x-icon")
 		w.Write(favicon)
 	default:
-		http.NotFound(w, r)
+		h.Set("Access-Control-Allow-Origin", r.Proto+"://"+r.Host)
+		if strings.HasSuffix(p, "/") {
+			p += "index.html"
+		}
+		f, err := wwwFS.Open(p[1:])
+		if err != nil {
+			log.Println("\t", err)
+			http.NotFound(w, r)
+			return
+		}
+		s, err := f.Stat()
+		if err != nil {
+			log.Println("\t", err)
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+		if s.IsDir() {
+			http.Redirect(w, r, r.URL.Path+"/", http.StatusMovedPermanently)
+			return
+		}
+		wwwServer.ServeHTTP(w, r)
 	}
 }
 
