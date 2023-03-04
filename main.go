@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"kurisu/terminal"
 	"kurisu/web"
@@ -9,6 +10,8 @@ import (
 )
 
 func main() {
+	flag.Parse()
+
 	log.Println("Starting kurisu...")
 
 	webMsg := make(chan string)

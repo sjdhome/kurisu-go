@@ -2,19 +2,26 @@ package web
 
 import (
 	"embed"
+	"flag"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 )
 
+var (
+	listenAt = flag.String("l", ":8080", "Listen address.")
+	certfile = flag.String("cert", "", "TLS certificate file.")
+	keyfile  = flag.String("key", "", "TLS key file.")
+)
+
 func New(msgBus chan string) {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	if *certfile != "" && *keyfile != "" {
+		log.Printf("Starting HTTPS server at \"%s\".\n", *listenAt)
+		log.Fatalln(http.ListenAndServeTLS(*listenAt, *certfile, *keyfile, http.HandlerFunc(serve)))
+	} else {
+		log.Printf("Starting HTTP server at \"%s\".\n", *listenAt)
+		log.Fatalln(http.ListenAndServe(*listenAt, http.HandlerFunc(serve)))
 	}
-	log.Printf("Starting web server at \":%s\".\n", port)
-	log.Fatalln(http.ListenAndServe(":"+port, http.HandlerFunc(serve)))
 }
 
 //go:embed static
