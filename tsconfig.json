@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "rootDir": "web/typescript",
+    "rootDir": "web/ts",
     "outDir": "web/static/js",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
