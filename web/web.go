@@ -34,6 +34,9 @@ var wwwServer = http.FileServer(http.FS(wwwFS))
 //go:embed favicon.ico
 var favicon []byte
 
+//go:embed robots.txt
+var robots []byte
+
 const DOMAIN = "sjdhome.com"
 
 func serve(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +72,10 @@ func get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		h.Set("Content-Type", "image/x-icon")
 		w.Write(favicon)
+	case p == "/robots.txt":
+		w.WriteHeader(http.StatusOK)
+		h.Set("Content-Type", "text/plain")
+		w.Write(robots)
 	default:
 		h.Set("Access-Control-Allow-Origin", r.Proto+"://"+r.Host)
 		if strings.HasSuffix(p, "/") {
