@@ -10,18 +10,21 @@ import (
 )
 
 var (
-	listenAt = flag.String("l", ":8080", "Listen address.")
-	certfile = flag.String("cert", "", "TLS certificate file.")
-	keyfile  = flag.String("key", "", "TLS key file.")
+	webAddr = flag.String("web", ":8080", "Listen address.")
+	cert    = flag.String("cert", "", "TLS certificate file.")
+	key     = flag.String("key", "", "TLS key file.")
 )
 
 func New(msgBus chan string) {
-	if *certfile != "" && *keyfile != "" {
-		log.Printf("Starting HTTPS server at \"%s\".\n", *listenAt)
-		log.Fatalln(http.ListenAndServeTLS(*listenAt, *certfile, *keyfile, http.HandlerFunc(serve)))
+	if *webAddr == "" {
+		return
+	}
+	if *cert != "" && *key != "" {
+		log.Printf("Starting HTTPS server at \"%s\".\n", *webAddr)
+		log.Fatalln(http.ListenAndServeTLS(*webAddr, *cert, *key, http.HandlerFunc(serve)))
 	} else {
-		log.Printf("Starting HTTP server at \"%s\".\n", *listenAt)
-		log.Fatalln(http.ListenAndServe(*listenAt, http.HandlerFunc(serve)))
+		log.Printf("Starting HTTP server at \"%s\".\n", *webAddr)
+		log.Fatalln(http.ListenAndServe(*webAddr, http.HandlerFunc(serve)))
 	}
 }
 
