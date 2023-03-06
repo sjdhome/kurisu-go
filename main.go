@@ -10,11 +10,13 @@ import (
 	"os"
 )
 
+var logFilename = flag.String("log", "kurisu.log", "Log filename.")
+
 func main() {
 	flag.Parse()
 
 	// Send log to stdout and file.
-	logFile, err := os.OpenFile("kurisu.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile(*logFilename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Println("Failed to open log file.")
 		log.Fatalln(err)
