@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"kurisu/web"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -40,11 +41,13 @@ func (b blog) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if p == "blog" || p == "blog/index.html" {
 		tmpl, err := template.ParseFS(wwwFS, "index.html")
 		if err != nil {
+			log.Println("\t", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		err = tmpl.Execute(w, "Hello world!")
+		err = tmpl.Execute(w, b)
 		if err != nil {
+			log.Println("\t", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
