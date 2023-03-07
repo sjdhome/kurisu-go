@@ -1,9 +1,8 @@
 package web
 
 import (
-	"embed"
+	_ "embed"
 	"flag"
-	"io/fs"
 	"log"
 	"net/http"
 	"strings"
@@ -19,6 +18,9 @@ func New(msgBus chan string) {
 	if *webAddr == "" {
 		return
 	}
+
+	registerBasicRoutes()
+
 	if *cert != "" && *key != "" {
 		log.Printf("Starting HTTPS server at \"%s\".\n", *webAddr)
 		log.Fatalln(http.ListenAndServeTLS(*webAddr, *cert, *key, http.HandlerFunc(serve)))
@@ -28,82 +30,28 @@ func New(msgBus chan string) {
 	}
 }
 
-//go:embed www
-var _wwwFS embed.FS
-
-var wwwFS, _ = fs.Sub(_wwwFS, "www")
-var wwwServer = http.FileServer(http.FS(wwwFS))
-
-//go:embed favicon.ico
-var favicon []byte
-
-//go:embed robots.txt
-var robots []byte
-
-const DOMAIN = "sjdhome.com"
-
 func serve(w http.ResponseWriter, r *http.Request) {
+	// Get real IP address.
 	if ip, exist := r.Header[http.CanonicalHeaderKey("CF-Connecting-IP")]; exist {
 		r.RemoteAddr = ip[0]
 	}
+
 	log.Printf("%s: %s %s %s\n", r.Host, r.RemoteAddr, r.Method, r.URL.Path)
 
-	if r.Method == http.MethodGet {
-		get(w, r)
-	} else if r.Method == http.MethodPost {
-		post(w, r)
-	} else {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	}
-}
-
-func get(w http.ResponseWriter, r *http.Request) {
-	p := r.URL.Path
-	h := w.Header()
-
-	h.Set("Server", "kurisu")
+	r.Header["Server"] = []string{"kurisu"}
 
 	// Redirect www to naked domain.
-	if r.Host == "www."+DOMAIN {
-		http.Redirect(w, r, r.Proto+"://"+DOMAIN+r.URL.Path, http.StatusMovedPermanently)
+	if strings.HasPrefix(r.Host, "www.") {
+		naked := strings.TrimPrefix(r.Host, "www.")
+		http.Redirect(w, r, r.Proto+"://"+naked+r.URL.Path, http.StatusMovedPermanently)
 		return
 	}
 
-	// Router.
-	switch {
-	case p == "/favicon.ico":
-		w.WriteHeader(http.StatusOK)
-		h.Set("Content-Type", "image/x-icon")
-		w.Write(favicon)
-	case p == "/robots.txt":
-		w.WriteHeader(http.StatusOK)
-		h.Set("Content-Type", "text/plain")
-		w.Write(robots)
-	default:
-		h.Set("Access-Control-Allow-Origin", r.Proto+"://"+r.Host)
-		if strings.HasSuffix(p, "/") {
-			p += "index.html"
-		}
-		f, err := wwwFS.Open(p[1:])
-		if err != nil {
-			log.Println("\t", err)
-			http.NotFound(w, r)
-			return
-		}
-		s, err := f.Stat()
-		if err != nil {
-			log.Println("\t", err)
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-			return
-		}
-		if s.IsDir() {
-			http.Redirect(w, r, r.URL.Path+"/", http.StatusMovedPermanently)
-			return
-		}
-		wwwServer.ServeHTTP(w, r)
+	route, err := SelectRoute(r.URL.Path)
+	if err != nil {
+		log.Println("\t", err)
+		http.NotFound(w, r)
+		return
 	}
-}
-
-func post(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusMethodNotAllowed)
+	route.ServeHTTP(w, r)
 }

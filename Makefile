@@ -3,7 +3,6 @@
 
 clean:
 	rm -r build/* || true
-	rm -r web/www/js/* || true
 
 npm-task:
 	npm run compile
