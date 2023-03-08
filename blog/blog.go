@@ -42,13 +42,13 @@ func (b blog) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(wwwFS, "index.html")
 		if err != nil {
 			log.Println("\t", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 		err = tmpl.Execute(w, b)
 		if err != nil {
 			log.Println("\t", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 		return
