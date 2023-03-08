@@ -43,7 +43,7 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	// Redirect www to naked domain.
 	if strings.HasPrefix(r.Host, "www.") {
 		naked := strings.TrimPrefix(r.Host, "www.")
-		http.Redirect(w, r, r.Proto+"://"+naked+r.URL.Path, http.StatusMovedPermanently)
+		http.Redirect(w, r, "https://"+naked+r.URL.Path, http.StatusMovedPermanently)
 		return
 	}
 
