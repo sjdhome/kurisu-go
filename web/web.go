@@ -38,7 +38,7 @@ func serve(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("%s: %s %s %s\n", r.Host, r.RemoteAddr, r.Method, r.URL.Path)
 
-	r.Header["Server"] = []string{"kurisu"}
+	w.Header().Set("Server", "kurisu")
 
 	// Redirect www to naked domain.
 	if strings.HasPrefix(r.Host, "www.") {
