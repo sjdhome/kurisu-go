@@ -4,6 +4,7 @@
         "target": "ESNext",
         "module": "NodeNext",
         "rootDirs": ["blog"],
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "jsx": "react"
     }
 }

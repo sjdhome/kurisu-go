@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-//go:embed www
+//go:embed dist
 var _wwwFS embed.FS
-var wwwFS, _ = fs.Sub(_wwwFS, "www")
+var wwwFS, _ = fs.Sub(_wwwFS, "dist")
 var wwwServer = http.StripPrefix("/blog", http.FileServer(http.FS(wwwFS)))
 
 func (b blog) Method() string {

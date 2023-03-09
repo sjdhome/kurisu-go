@@ -5,10 +5,11 @@ clean:
 	rm -r build/* || true
 
 npm-task:
-	npm run compile
+	npm run compile:node
+	npm run blog:generate
 
 debug: clean npm-task
-	go build -o build/kurisu main.go
+	go build -o build/kurisu main.go log.go
 
 release: clean npm-task
-	go build -o build/kurisu -ldflags "-s" main.go
+	go build -o build/kurisu -ldflags "-s" main.go log.go
