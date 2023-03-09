@@ -1,12 +1,12 @@
 import React from "react";
 
-function Post(props: { postHTML: string }) {
-  const postHTML = props.postHTML;
+function Post(props: { title: string; postHTML: string }) {
+  const { postHTML, title } = props;
   return (
     <html>
       <head>
         <meta charSet="utf-8" />
-        <title>Post</title>
+        <title>{title}</title>
       </head>
       <body>
         <main dangerouslySetInnerHTML={{ __html: postHTML }} />

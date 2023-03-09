@@ -23,6 +23,7 @@ async function renderPages() {
       `<!DOCTYPE html>${html}`
     );
   }
+
   const posts = await fs.readdir(`${cwd()}/blog/post`);
   for (const postFilename of posts) {
     const postMarkdown = await fs.readFile(
@@ -30,7 +31,9 @@ async function renderPages() {
       "utf-8"
     );
     const postHTML = convertor.makeHtml(postMarkdown);
-    const post = ReactDOMServer.renderToString(<Post postHTML={postHTML} />);
+    const post = ReactDOMServer.renderToString(
+      <Post title={"Post" /* TODO */} postHTML={postHTML} />
+    );
     await fs.writeFile(
       `${cwd()}/blog/dist/post/${postFilename.replace(".md", ".html")}`,
       `<!DOCTYPE html>${post}`
