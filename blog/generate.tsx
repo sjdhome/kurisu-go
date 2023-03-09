@@ -17,7 +17,7 @@ async function renderPages() {
     if (pageFilename === "post.js") continue; /* We'll render this page later */
     const pageModule = await import(`${cwd()}/blog/page/${pageFilename}`);
     const Page = pageModule.default;
-    const html = ReactDOMServer.renderToString(await Page());
+    const html = ReactDOMServer.renderToString(<Page />);
     await fs.writeFile(
       `${cwd()}/blog/dist/${pageFilename.replace(".js", ".html")}`,
       `<!DOCTYPE html>${html}`

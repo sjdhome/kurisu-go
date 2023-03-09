@@ -1,14 +1,22 @@
 import React from "react";
 
-async function Index() {
+function Body() {
+  return (
+    <>
+      <h1>Hello world</h1>
+    </>
+  );
+}
+
+function Index() {
   return (
     <html>
       <head>
         <meta charSet="utf-8" />
-        <title>Blog</title>
+        <title>sjdhome's blog</title>
       </head>
       <body>
-        <h1>Blog</h1>
+        <Body />
       </body>
     </html>
   );
