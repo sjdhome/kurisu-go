@@ -4,6 +4,7 @@ import Showdown from "showdown";
 import fs from "node:fs/promises";
 import { cwd } from "node:process";
 import Post from "./page/post.js";
+import { title } from "./constants.js";
 
 const convertor = new Showdown.Converter();
 
@@ -32,7 +33,13 @@ async function renderPages() {
     );
     const postHTML = convertor.makeHtml(postMarkdown);
     const post = ReactDOMServer.renderToString(
-      <Post title={"Post" /* TODO */} postHTML={postHTML} />
+      <Post
+        title={`${postFilename.substring(
+          0,
+          postFilename.length - ".md".length
+        )} | ${title}`}
+        postHTML={postHTML}
+      />
     );
     await fs.writeFile(
       `${cwd()}/blog/dist/post/${postFilename.replace(".md", ".html")}`,

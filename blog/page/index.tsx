@@ -1,4 +1,5 @@
 import React from "react";
+import { title } from "../constants.js";
 
 function Body() {
   return (
@@ -13,7 +14,7 @@ function Index() {
     <html>
       <head>
         <meta charSet="utf-8" />
-        <title>sjdhome's blog</title>
+        <title>{title}</title>
       </head>
       <body>
         <Body />
