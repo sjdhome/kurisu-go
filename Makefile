@@ -6,6 +6,7 @@ clean:
 
 npm-task:
 	npm run compile:node
+	npm run compile:web
 	npm run blog:generate
 
 debug: clean npm-task

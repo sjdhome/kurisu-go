@@ -1,9 +1,9 @@
 {
+    "include": ["./blog"],
     "compilerOptions": {
         "strict": true,
         "target": "ESNext",
         "module": "NodeNext",
-        "rootDirs": ["blog"],
         "skipLibCheck": true,
         "jsx": "react"
     }

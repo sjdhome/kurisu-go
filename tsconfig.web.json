@@ -1,7 +1,9 @@
 {
+    "include": ["./aboutme"],
     "compilerOptions": {
         "strict": true,
         "target": "ESNext",
-        "module": "ESNext"
+        "module": "ESNext",
+        "skipLibCheck": true,
     }
 }
