@@ -10,7 +10,7 @@ npm-task:
 	npm run blog:generate
 
 debug: clean npm-task
-	go build -o build/kurisu main.go log.go
+	go build -o build/kurisu main.go
 
 release: clean npm-task
-	go build -o build/kurisu -ldflags "-s" main.go log.go
+	go build -o build/kurisu -ldflags "-s" main.go
