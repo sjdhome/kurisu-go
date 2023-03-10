@@ -1,5 +1,4 @@
 import React from "react";
-import { title } from "../constants.js";
 
 function Post(props: { title: string; postHTML: string }) {
   const { postHTML, title } = props;
@@ -7,6 +6,8 @@ function Post(props: { title: string; postHTML: string }) {
     <html>
       <head>
         <meta charSet="utf-8" />
+        <meta name="description" content={title} />
+        <meta name="og:title" content={title} />
         <title>{title}</title>
       </head>
       <body>
