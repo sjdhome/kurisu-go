@@ -115,6 +115,7 @@ type BlogHandler struct {
 }
 
 func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
 	const REGEXP_ERROR = "Unable to parse regular expression for URL."
 	onError := func(reason string, err error) {
 		log.Println(fmt.Errorf("%s: %w.", reason, err))
@@ -142,7 +143,6 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				re := regexp.MustCompile(`\/blog\/post\/([A-Za-z\-]+)\/content\/$`)
 				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				postContent, err := h.blog.GetPostContent(id)
-				log.Printf("%s is reading blog post %s content.\n", r.RemoteAddr, id)
 				if err != nil {
 					onError(fmt.Sprintf("Unable to read blog post %s content", id), err)
 					return
@@ -153,7 +153,6 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				re := regexp.MustCompile(`\/blog\/post\/([A-Za-z\-]+)\/$`)
 				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				post, err := h.blog.GetPost(id)
-				log.Printf("%s is reading blog post %s.\n", r.RemoteAddr, id)
 				if err != nil {
 					onError(fmt.Sprintf("Unable to get blog post %s", id), err)
 					return
@@ -167,7 +166,6 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		} else if r.URL.Path == "/blog/post/" {
 			// Get all posts
-			log.Printf("%s is reading all blog posts.\n", r.RemoteAddr)
 			posts, err := h.blog.GetAllPosts()
 			if err != nil {
 				onError("Unable to get all blog posts", err)
