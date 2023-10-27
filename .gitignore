@@ -1,6 +1,2 @@
 build
 .vscode
-node_modules
-kurisu.log
-*.js
-blog/dist

@@ -1,54 +1,35 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"io"
-	"kurisu/aboutme"
-	"kurisu/blog"
-	"kurisu/terminal"
-	"kurisu/web"
+	"net/http"
 	"log"
+	"flag"
 	"os"
 )
 
-var logFilename = flag.String("log", "kurisu.log", "Log filename.")
+type BlogPostHandler struct {}
+
+func (h BlogPostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello world"))
+	log.Println("Receive request")
+}
+
+var logFile string
 
 func main() {
+	flag.StringVar(&logFile, "log-file", "", "Specify log storage directory.")
 	flag.Parse()
-
-	// Send log to stdout and file.
-	logFile, err := os.OpenFile(*logFilename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Println("Failed to open log file.")
-		log.Fatalln(err)
-	}
-	defer logFile.Close()
-	mw := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(mw)
-
-	log.SetPrefix("[kurisu] ")
-	log.Println("Starting kurisu...")
-
-	webMsg := make(chan string)
-	go web.New(webMsg)
-
-	terminalMsg := make(chan string)
-	go terminal.New(terminalMsg)
-
-	blogMsg := make(chan string)
-	go blog.New(blogMsg)
-
-	aboutmeMsg := make(chan string)
-	go aboutme.New(aboutmeMsg)
-
-	select {
-	case msg := <-webMsg:
-		fmt.Println(msg)
-	case msg := <-terminalMsg:
-		switch msg {
-		case "exit":
-			os.Exit(0)
+	if logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Println("Unable to open log file.")
+			log.Fatalln(err)
 		}
+		log.SetOutput(f)
 	}
+
+	var blogPostHandler BlogPostHandler
+	http.Handle("/blog/post/", blogPostHandler)
+	log.Println("HTTP server started at :3000.")
+	log.Fatalln(http.ListenAndServe(":3000", nil))
 }
