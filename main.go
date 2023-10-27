@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
 )
 
 type BlogHandler struct {
@@ -26,7 +25,13 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if isSinglePost {
-			readContent, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/content\/`, r.URL.Path)
+			readContent, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/content\/$`, r.URL.Path)
+			if err != nil {
+				log.Println("Unable to parse regular expression for URL.")
+				log.Println(err)
+				return
+			}
+			readMetadata, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/$`, r.URL.Path)
 			if err != nil {
 				log.Println("Unable to parse regular expression for URL.")
 				log.Println(err)
@@ -34,8 +39,8 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			if readContent {
 				// Read single post content
-				tmp, _ := strings.CutPrefix(r.URL.Path, "/blog/post/")
-				id, _ := strings.CutSuffix(tmp, "/content/")
+				re := regexp.MustCompile(`\/blog\/post\/([A-Za-z\-]+)\/content\/$`)
+				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				postContent, err := h.blog.GetPostContent(id)
 				log.Printf("%s is reading blog post %s content.\n", r.RemoteAddr, id)
 				if err != nil {
@@ -44,10 +49,10 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				w.Write([]byte(postContent))
-			} else {
+			} else if readMetadata {
 				// Get single post
-				tmp, _ := strings.CutPrefix(r.URL.Path, "/blog/post/")
-				id, _ := strings.CutSuffix(tmp, "/")
+				re := regexp.MustCompile(`\/blog\/post\/([A-Za-z\-]+)\/$`)
+				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				post, err := h.blog.GetPost(id)
 				log.Printf("%s is reading blog post %s.\n", r.RemoteAddr, id)
 				if err != nil {
@@ -79,6 +84,8 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			w.Write(j)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	} else {
 		// Not supported
