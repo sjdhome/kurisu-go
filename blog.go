@@ -21,14 +21,14 @@ type PostMetadata struct {
 	Author      string   `json:"author"`
 	Tags        []string `json:"tags"`
 	Description string   `json:"description"`
-	ShowComment bool     `json:"showComment"`
+	Commentable bool     `json:"commentable"`
 	Visible     bool     `json:"visible"`
 	PinToTop    bool     `json:"pinToTop"`
 }
 
 func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 	var posts []PostMetadata
-	rows, err := b.db.Query("SELECT id, title, created, edited, author, tags, description, showComment, visible, pinToTop FROM 'blog-post';")
+	rows, err := b.db.Query("SELECT id, title, created, edited, author, tags, description, commentable, visible, pinToTop FROM 'posts';")
 	if err != nil {
 		return nil, fmt.Errorf("Querying databse: %w", err)
 	}
@@ -39,19 +39,23 @@ func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 			created     string
 			edited      string
 			author      string
-			_tags       string
+			tags        []string
 			description string
-			showComment int
+			commentable int
 			visible     int
 			pinToTop    int
 		)
-		if err := rows.Scan(&id, &title, &created, &edited, &author, &_tags, &description, &showComment, &visible, &pinToTop); err != nil {
+		if err := rows.Scan(&id, &title, &created, &edited, &author, &description, &commentable, &visible, &pinToTop); err != nil {
 			return nil, fmt.Errorf("Extracting data from result: %w", err)
 		}
-		var tags []string
-		err := json.Unmarshal([]byte(_tags), &tags)
+		tagRows, err := b.db.Query("SELECT tag FROM tags WHERE id = ?", id)
 		if err != nil {
-			return nil, fmt.Errorf("Unmarshal tags: %w", err)
+			return nil, fmt.Errorf("Querying tags for blog post %s: %w", id, err)
+		}
+		for tagRows.Next() {
+			var tag string
+			tagRows.Scan(&tag)
+			tags = append(tags, tag)
 		}
 		post := PostMetadata{
 			Id:          id,
@@ -61,7 +65,7 @@ func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 			Author:      author,
 			Tags:        tags,
 			Description: description,
-			ShowComment: showComment != 0,
+			Commentable: commentable != 0,
 			Visible:     visible != 0,
 			PinToTop:    pinToTop != 0,
 		}
@@ -71,25 +75,29 @@ func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 }
 
 func (b Blog) GetPost(id string) (*PostMetadata, error) {
-	row := b.db.QueryRow("SELECT title, created, edited, author, tags, description, showComment, visible, pinToTop FROM 'blog-post' WHERE id = ?", id)
+	row := b.db.QueryRow("SELECT title, created, edited, author, description, commentable, visible, pinToTop FROM 'posts' WHERE id = ?", id)
 	var (
 		title       string
 		created     string
 		edited      string
 		author      string
-		_tags       string
+		tags        []string
 		description string
-		showComment int
+		commentable int
 		visible     int
 		pinToTop    int
 	)
-	if err := row.Scan(&title, &created, &edited, &author, &_tags, &description, &showComment, &visible, &pinToTop); err != nil {
+	if err := row.Scan(&title, &created, &edited, &author, &description, &commentable, &visible, &pinToTop); err != nil {
 		return nil, fmt.Errorf("Extracting data from result: %w", err)
 	}
-	var tags []string
-	err := json.Unmarshal([]byte(_tags), &tags)
+	tagRows, err := b.db.Query("SELECT tag FROM tags WHERE id = ?", id)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal tags: %w", err)
+		return nil, fmt.Errorf("Querying tags for blog post %s: %w", id, err)
+	}
+	for tagRows.Next() {
+		var tag string
+		tagRows.Scan(&tag)
+		tags = append(tags, tag)
 	}
 	post := PostMetadata{
 		Id:          id,
@@ -99,7 +107,7 @@ func (b Blog) GetPost(id string) (*PostMetadata, error) {
 		Author:      author,
 		Tags:        tags,
 		Description: description,
-		ShowComment: showComment != 0,
+		Commentable: commentable != 0,
 		Visible:     visible != 0,
 		PinToTop:    pinToTop != 0,
 	}

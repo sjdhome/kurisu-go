@@ -25,6 +25,7 @@ func main() {
 		if err != nil {
 			panic(fmt.Errorf("Unable to open log file: %w", err))
 		}
+		defer f.Close()
 		log.SetOutput(f)
 	}
 
