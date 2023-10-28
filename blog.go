@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"log"
 	"regexp"
+	"os"
 )
 
 type Blog struct {
 	db *sql.DB
 }
 
-type PostMetadata struct {
+type Post struct {
 	Id          string   `json:"id"`
 	Title       string   `json:"title"`
 	Created     string   `json:"created"`
@@ -26,11 +27,11 @@ type PostMetadata struct {
 	PinToTop    bool     `json:"pinToTop"`
 }
 
-func (b Blog) GetAllPosts() ([]PostMetadata, error) {
-	var posts []PostMetadata
-	rows, err := b.db.Query("SELECT id, title, created, edited, author, tags, description, commentable, visible, pinToTop FROM 'posts';")
+func (b Blog) GetAllPosts() ([]Post, error) {
+	var posts []Post
+	rows, err := b.db.Query("SELECT id, title, created, edited, author, description, commentable, visible, pinToTop FROM posts;")
 	if err != nil {
-		return nil, fmt.Errorf("Querying databse: %w", err)
+		return nil, fmt.Errorf("Querying 'posts' table: %w", err)
 	}
 	for rows.Next() {
 		var (
@@ -39,25 +40,20 @@ func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 			created     string
 			edited      string
 			author      string
-			tags        []string
 			description string
 			commentable int
 			visible     int
 			pinToTop    int
 		)
-		if err := rows.Scan(&id, &title, &created, &edited, &author, &description, &commentable, &visible, &pinToTop); err != nil {
-			return nil, fmt.Errorf("Extracting data from result: %w", err)
-		}
-		tagRows, err := b.db.Query("SELECT tag FROM tags WHERE id = ?", id)
+		err := rows.Scan(&id, &title, &created, &edited, &author, &description, &commentable, &visible, &pinToTop)
 		if err != nil {
-			return nil, fmt.Errorf("Querying tags for blog post %s: %w", id, err)
+			return nil, fmt.Errorf("Extracting data from SQL response: %w", err)
 		}
-		for tagRows.Next() {
-			var tag string
-			tagRows.Scan(&tag)
-			tags = append(tags, tag)
+		tags, err := b.GetTagsOfPost(id)
+		if err != nil {
+			return nil, fmt.Errorf("Querying tags of '%s' post: %w", id, err)
 		}
-		post := PostMetadata{
+		post := Post{
 			Id:          id,
 			Title:       title,
 			Created:     created,
@@ -65,6 +61,7 @@ func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 			Author:      author,
 			Tags:        tags,
 			Description: description,
+			// SQLite 3 has no bool type.
 			Commentable: commentable != 0,
 			Visible:     visible != 0,
 			PinToTop:    pinToTop != 0,
@@ -74,32 +71,41 @@ func (b Blog) GetAllPosts() ([]PostMetadata, error) {
 	return posts, nil
 }
 
-func (b Blog) GetPost(id string) (*PostMetadata, error) {
+func (b Blog) GetTagsOfPost(id string) ([]string, error) {
+	tagRows, err := b.db.Query("SELECT tag FROM tags WHERE post_id = ?", id)
+	if err != nil {
+		return nil, fmt.Errorf("Querying 'post_tag' table where id = '%s': %w", id, err)
+	}
+	var tags []string
+	for tagRows.Next() {
+		var tag string
+		tagRows.Scan(&tag)
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
+
+func (b Blog) GetPost(id string) (*Post, error) {
 	row := b.db.QueryRow("SELECT title, created, edited, author, description, commentable, visible, pinToTop FROM 'posts' WHERE id = ?", id)
 	var (
 		title       string
 		created     string
 		edited      string
 		author      string
-		tags        []string
 		description string
 		commentable int
 		visible     int
 		pinToTop    int
 	)
-	if err := row.Scan(&title, &created, &edited, &author, &description, &commentable, &visible, &pinToTop); err != nil {
-		return nil, fmt.Errorf("Extracting data from result: %w", err)
-	}
-	tagRows, err := b.db.Query("SELECT tag FROM tags WHERE id = ?", id)
+	err := row.Scan(&title, &created, &edited, &author, &description, &commentable, &visible, &pinToTop)
 	if err != nil {
-		return nil, fmt.Errorf("Querying tags for blog post %s: %w", id, err)
+		return nil, fmt.Errorf("Extracting data from SQL response: %w", err)
 	}
-	for tagRows.Next() {
-		var tag string
-		tagRows.Scan(&tag)
-		tags = append(tags, tag)
+	tags, err := b.GetTagsOfPost(id)
+	if err != nil {
+		return nil, fmt.Errorf("Querying tags of '%s' post: %w", id, err)
 	}
-	post := PostMetadata{
+	post := Post{
 		Id:          id,
 		Title:       title,
 		Created:     created,
@@ -107,6 +113,7 @@ func (b Blog) GetPost(id string) (*PostMetadata, error) {
 		Author:      author,
 		Tags:        tags,
 		Description: description,
+		// SQLite 3 has no bool type.
 		Commentable: commentable != 0,
 		Visible:     visible != 0,
 		PinToTop:    pinToTop != 0,
@@ -115,7 +122,11 @@ func (b Blog) GetPost(id string) (*PostMetadata, error) {
 }
 
 func (b Blog) GetPostContent(id string) (string, error) {
-	return "Example", nil
+	bytes, err := os.ReadFile(fmt.Sprintf("./blog/post/%s.md", id))
+	if err != nil {
+		return "", fmt.Errorf("Reading blog post '%s' content: %w", id, err)
+	}
+	return string(bytes), nil
 }
 
 type BlogHandler struct {
@@ -124,18 +135,20 @@ type BlogHandler struct {
 
 func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
-	const REGEXP_ERROR = "Unable to parse regular expression for URL."
+	const REGEXP_ERROR = "Parsing regular expression for URL"
 	onError := func(reason string, err error) {
 		log.Println(fmt.Errorf("%s: %w.", reason, err))
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	if r.Method == "GET" {
-		isSinglePost, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/`, r.URL.Path)
+		// HTTP GET
+		allPosts, err := regexp.MatchString(`^\/blog\/post\/$`, r.URL.Path)
 		if err != nil {
 			onError(REGEXP_ERROR, err)
 			return
 		}
-		if isSinglePost {
+		if !allPosts {
+			// Single post
 			readContent, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/content\/$`, r.URL.Path)
 			if err != nil {
 				onError(REGEXP_ERROR, err)
@@ -152,7 +165,7 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				postContent, err := h.blog.GetPostContent(id)
 				if err != nil {
-					onError(fmt.Sprintf("Unable to read blog post %s content", id), err)
+					onError(fmt.Sprintf("Reading blog post %s content", id), err)
 					return
 				}
 				w.Write([]byte(postContent))
@@ -162,17 +175,21 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				post, err := h.blog.GetPost(id)
 				if err != nil {
-					onError(fmt.Sprintf("Unable to get blog post %s", id), err)
+					onError(fmt.Sprintf("Reading blog post '%s'", id), err)
 					return
 				}
 				j, err := json.Marshal(post)
 				if err != nil {
-					onError(fmt.Sprintf("Unable to marshal blog post %s", id), err)
+					onError(fmt.Sprintf("Marshaling blog post '%s'", id), err)
 					return
 				}
 				w.Write(j)
+			} else {
+				// Invalid URL
+				log.Printf("Invalid URL %s.\n", r.URL.Path)
+				return
 			}
-		} else if r.URL.Path == "/blog/post/" {
+		} else {
 			// Get all posts
 			posts, err := h.blog.GetAllPosts()
 			if err != nil {
@@ -185,11 +202,9 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			w.Write(j)
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
 		}
 	} else {
-		// Not supported
+		// Not HTTP GET
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
