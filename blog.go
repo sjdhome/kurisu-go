@@ -149,19 +149,19 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if !allPosts {
 			// Single post
-			readContent, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/content\/$`, r.URL.Path)
+			readContent, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z0-9\-]+\/content\/$`, r.URL.Path)
 			if err != nil {
 				onError(REGEXP_ERROR, err)
 				return
 			}
-			readMetadata, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z\-]+\/$`, r.URL.Path)
+			readMetadata, err := regexp.MatchString(`^\/blog\/post\/[A-Za-z0-9\-]+\/$`, r.URL.Path)
 			if err != nil {
 				onError(REGEXP_ERROR, err)
 				return
 			}
 			if readContent {
 				// Read single post content
-				re := regexp.MustCompile(`\/blog\/post\/([A-Za-z\-]+)\/content\/$`)
+				re := regexp.MustCompile(`^\/blog\/post\/([A-Za-z0-9\-]+)\/content\/$`)
 				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				postContent, err := h.blog.GetPostContent(id)
 				if err != nil {
@@ -171,7 +171,7 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(postContent))
 			} else if readMetadata {
 				// Get single post
-				re := regexp.MustCompile(`\/blog\/post\/([A-Za-z\-]+)\/$`)
+				re := regexp.MustCompile(`^\/blog\/post\/([A-Za-z0-9\-]+)\/$`)
 				id := string(re.FindSubmatch([]byte(r.URL.Path))[1])
 				post, err := h.blog.GetPost(id)
 				if err != nil {
