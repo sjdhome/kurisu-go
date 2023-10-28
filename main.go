@@ -12,12 +12,12 @@ import (
 
 var logFile string
 var port int
-var dbFile string
+var blogDB string
 
 func main() {
 	flag.StringVar(&logFile, "log-file", "", "Specify log storage directory.")
 	flag.IntVar(&port, "port", 3000, "HTTP server port.")
-	flag.StringVar(&dbFile, "db-file", "kurisu.sqlite3", "SQLite database file.")
+	flag.StringVar(&blogDB, "blogDB", "blog.sqlite3", "Blog SQLite database file.")
 	flag.Parse()
 
 	if logFile != "" {
@@ -29,7 +29,7 @@ func main() {
 		log.SetOutput(f)
 	}
 
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := sql.Open("sqlite3", blogDB)
 	if err != nil {
 		panic(fmt.Errorf("Unable to open database: %w", err))
 	}
