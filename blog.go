@@ -168,6 +168,7 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					onError(fmt.Sprintf("Reading blog post %s content", id), err)
 					return
 				}
+				w.Header().Set("Content-Type", "text/markdown")
 				w.Write([]byte(postContent))
 			} else if readMetadata {
 				// Get single post
@@ -183,6 +184,7 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					onError(fmt.Sprintf("Marshaling blog post '%s'", id), err)
 					return
 				}
+				w.Header().Set("Content-Type", "application/json")
 				w.Write(j)
 			} else {
 				// Invalid URL
@@ -201,6 +203,7 @@ func (h BlogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				onError("Unable to marshal blog posts", err)
 				return
 			}
+			w.Header().Set("Content-Type", "application/json")
 			w.Write(j)
 		}
 	} else {
