@@ -14,7 +14,7 @@ var dbPath string
 
 func main() {
 	flag.IntVar(&port, "port", 3000, "HTTP port")
-	flag.StringVar(&dbPath, "db-path", "blog.sqlite3", "SQLite database path")
+	flag.StringVar(&dbPath, "db-path", "db.sqlite3", "SQLite database path")
 	flag.Parse()
 
 	db, err := sql.Open("sqlite3", dbPath)
